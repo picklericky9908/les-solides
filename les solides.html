@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حاسبة الأشكال الهندسية ثلاثية الأبعاد</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .shapes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .shape-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .shape-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .shape-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .shape-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .shape-3d {
+            width: 100%;
+            height: 250px;
+            border-radius: 10px;
+            border: 2px solid #e1e8ed;
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dimension-labels {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .dimension-label {
+            position: absolute;
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .controls-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #34495e;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .calculate-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .calculate-btn:active {
+            transform: scale(0.98);
+        }
+
+        .results {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            grid-column: 1 / -1;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .result-value {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .formula-info {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #1976d2;
+            grid-column: 1 / -1;
+        }
+
+        .dimension-info {
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-right: 4px solid #ffc107;
+        }
+
+        .dimension-info h4 {
+            color: #856404;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .dimension-info ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .dimension-info li {
+            color: #856404;
+            font-size: 12px;
+            margin-bottom: 4px;
+            position: relative;
+            padding-right: 15px;
+        }
+
+        .dimension-info li::before {
+            content: "•";
+            color: #ffc107;
+            position: absolute;
+            right: 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .shapes-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .shape-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .shape-3d {
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔷 حاسبة الأشكال الهندسية ثلاثية الأبعاد 🔷</h1>
+        
+        <div class="shapes-grid">
+            <!-- المكعب -->
+            <div class="shape-card">
+                <h2 class="shape-title">🔳 المكعب</h2>
+                <div class="shape-content">
+                    <div class="shape-3d" id="cube-3d">
+                        <div class="dimension-labels" id="cube-labels"></div>
+                    </div>
+                    <div class="controls-panel">
+                        <div class="dimension-info">
+                            <h4>الأبعاد المرئية:</h4>
+                            <ul>
+                                <li>الخطوط الزرقاء: أطراف المكعب</li>
+                                <li>النص الأزرق: طول الضلع</li>
+                                <li>يمكن تدوير الشكل بالماوس</li>
+                            </ul>
+                        </div>
+                        <div class="input-group">
+                            <label for="cube-side">طول الضلع (وحدة):</label>
+                            <input type="number" id="cube-side" step="0.01" min="0" placeholder="أدخل طول الضلع" oninput="updateCube()">
+                        </div>
+                        <button class="calculate-btn" onclick="calculateCube()">احسب</button>
+                    </div>
+                </div>
+                <div class="results" id="cube-results" style="display: none;">
+                    <div class="result-item">
+                        <span class="result-label">المساحة الجانبية:</span>
+                        <span class="result-value" id="cube-lateral"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">المساحة الكلية:</span>
+                        <span class="result-value" id="cube-total"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">الحجم:</span>
+                        <span class="result-value" id="cube-volume"></span>
+                    </div>
+                </div>
+                <div class="formula-info">
+                    📐 المساحة الكلية = 6 × (الضلع)² <br>
+                    📦 الحجم = (الضلع)³
+                </div>
+            </div>
+
+            <!-- متوازي المستطيلات -->
+            <div class="shape-card">
+                <h2 class="shape-title">📦 متوازي المستطيلات</h2>
+                <div class="shape-content">
+                    <div class="shape-3d" id="box-3d">
+                        <div class="dimension-labels" id="box-labels"></div>
+                    </div>
+                    <div class="controls-panel">
+                        <div class="dimension-info">
+                            <h4>الأبعاد المرئية:</h4>
+                            <ul>
+                                <li>الأحمر: الطول</li>
+                                <li>الأخضر: العرض</li>
+                                <li>الأزرق: الارتفاع</li>
+                            </ul>
+                        </div>
+                        <div class="input-group">
+                            <label for="box-length">الطول (وحدة):</label>
+                            <input type="number" id="box-length" step="0.01" min="0" placeholder="أدخل الطول" oninput="updateBox()">
+                        </div>
+                        <div class="input-group">
+                            <label for="box-width">العرض (وحدة):</label>
+                            <input type="number" id="box-width" step="0.01" min="0" placeholder="أدخل العرض" oninput="updateBox()">
+                        </div>
+                        <div class="input-group">
+                            <label for="box-height">الارتفاع (وحدة):</label>
+                            <input type="number" id="box-height" step="0.01" min="0" placeholder="أدخل الارتفاع" oninput="updateBox()">
+                        </div>
+                        <button class="calculate-btn" onclick="calculateBox()">احسب</button>
+                    </div>
+                </div>
+                <div class="results" id="box-results" style="display: none;">
+                    <div class="result-item">
+                        <span class="result-label">المساحة الجانبية:</span>
+                        <span class="result-value" id="box-lateral"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">المساحة الكلية:</span>
+                        <span class="result-value" id="box-total"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">الحجم:</span>
+                        <span class="result-value" id="box-volume"></span>
+                    </div>
+                </div>
+                <div class="formula-info">
+                    📐 المساحة الكلية = 2(طول×عرض + طول×ارتفاع + عرض×ارتفاع) <br>
+                    📦 الحجم = الطول × العرض × الارتفاع
+                </div>
+            </div>
+
+            <!-- الأسطوانة -->
+            <div class="shape-card">
+                <h2 class="shape-title">🥫 الأسطوانة</h2>
+                <div class="shape-content">
+                    <div class="shape-3d" id="cylinder-3d">
+                        <div class="dimension-labels" id="cylinder-labels"></div>
+                    </div>
+                    <div class="controls-panel">
+                        <div class="dimension-info">
+                            <h4>الأبعاد المرئية:</h4>
+                            <ul>
+                                <li>الأحمر: نصف القطر</li>
+                                <li>الأزرق: الارتفاع</li>
+                                <li>الأخضر: محيط القاعدة</li>
+                            </ul>
+                        </div>
+                        <div class="input-group">
+                            <label for="cylinder-radius">نصف القطر (وحدة):</label>
+                            <input type="number" id="cylinder-radius" step="0.01" min="0" placeholder="أدخل نصف القطر" oninput="updateCylinder()">
+                        </div>
+                        <div class="input-group">
+                            <label for="cylinder-height">الارتفاع (وحدة):</label>
+                            <input type="number" id="cylinder-height" step="0.01" min="0" placeholder="أدخل الارتفاع" oninput="updateCylinder()">
+                        </div>
+                        <button class="calculate-btn" onclick="calculateCylinder()">احسب</button>
+                    </div>
+                </div>
+                <div class="results" id="cylinder-results" style="display: none;">
+                    <div class="result-item">
+                        <span class="result-label">المساحة الجانبية:</span>
+                        <span class="result-value" id="cylinder-lateral"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">المساحة الكلية:</span>
+                        <span class="result-value" id="cylinder-total"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">الحجم:</span>
+                        <span class="result-value" id="cylinder-volume"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">محيط القاعدة:</span>
+                        <span class="result-value" id="cylinder-perimeter"></span>
+                    </div>
+                </div>
+                <div class="formula-info">
+                    📐 المساحة الكلية = 2π × نصف القطر × (نصف القطر + الارتفاع) <br>
+                    📦 الحجم = π × (نصف القطر)² × الارتفاع <br>
+                    ⭕ محيط القاعدة = 2π × نصف القطر
+                </div>
+            </div>
+
+            <!-- المخروط -->
+            <div class="shape-card">
+                <h2 class="shape-title">🔺 المخروط</h2>
+                <div class="shape-content">
+                    <div class="shape-3d" id="cone-3d">
+                        <div class="dimension-labels" id="cone-labels"></div>
+                    </div>
+                    <div class="controls-panel">
+                        <div class="dimension-info">
+                            <h4>الأبعاد المرئية:</h4>
+                            <ul>
+                                <li>الأحمر: نصف قطر القاعدة</li>
+                                <li>الأزرق: الارتفاع</li>
+                                <li>الأخضر: طول الراسم</li>
+                                <li>الأصفر: محيط القاعدة</li>
+                            </ul>
+                        </div>
+                        <div class="input-group">
+                            <label for="cone-radius">نصف قطر القاعدة (وحدة):</label>
+                            <input type="number" id="cone-radius" step="0.01" min="0" placeholder="أدخل نصف قطر القاعدة" oninput="updateCone()">
+                        </div>
+                        <div class="input-group">
+                            <label for="cone-height">الارتفاع (وحدة):</label>
+                            <input type="number" id="cone-height" step="0.01" min="0" placeholder="أدخل الارتفاع" oninput="updateCone()">
+                        </div>
+                        <button class="calculate-btn" onclick="calculateCone()">احسب</button>
+                    </div>
+                </div>
+                <div class="results" id="cone-results" style="display: none;">
+                    <div class="result-item">
+                        <span class="result-label">المساحة الجانبية:</span>
+                        <span class="result-value" id="cone-lateral"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">المساحة الكلية:</span>
+                        <span class="result-value" id="cone-total"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">الحجم:</span>
+                        <span class="result-value" id="cone-volume"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">طول الراسم:</span>
+                        <span class="result-value" id="cone-slant"></span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">محيط القاعدة:</span>
+                        <span class="result-value" id="cone-perimeter"></span>
+                    </div>
+                </div>
+                <div class="formula-info">
+                    📐 المساحة الكلية = π × نصف القطر × (نصف القطر + طول الراسم) <br>
+                    📦 الحجم = (1/3) × π × (نصف القطر)² × الارتفاع <br>
+                    📏 طول الراسم = √(نصف القطر² + الارتفاع²) <br>
+                    ⭕ محيط القاعدة = 2π × نصف القطر
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // متغيرات ثري جي إس العامة
+        let scenes = {};
+        let renderers = {};
+        let cameras = {};
+        let controls = {};
+        let shapes = {};
+
+        // إعداد المشهد الثلاثي الأبعاد
+        function initScene(containerId, shapeType) {
+            const container = document.getElementById(containerId);
+            
+            // إنشاء المشهد
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf8f9fa);
+            
+            // إنشاء الكاميرا
+            const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
+            camera.position.set(5, 5, 5);
+            
+            // إنشاء الرندر
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.offsetWidth, container.offsetHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+            
+            // إضافة الإضاءة
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            // حفظ المراجع
+            scenes[shapeType] = scene;
+            cameras[shapeType] = camera;
+            renderers[shapeType] = renderer;
+            
+            // إضافة التحكم بالماوس
+            addMouseControls(renderer.domElement, camera, shapeType);
+            
+            return { scene, camera, renderer };
+        }
+
+        // إضافة تحكم الماوس
+        function addMouseControls(canvas, camera, shapeType) {
+            let isRotating = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            
+            canvas.addEventListener('mousedown', (e) => {
+                isRotating = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            canvas.addEventListener('mouseup', () => {
+                isRotating = false;
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isRotating) return;
+                
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                camera.position.x = camera.position.x * Math.cos(deltaX * 0.01) - camera.position.z * Math.sin(deltaX * 0.01);
+                camera.position.z = camera.position.x * Math.sin(deltaX * 0.01) + camera.position.z * Math.cos(deltaX * 0.01);
+                
+                camera.lookAt(0, 0, 0);
+                renderers[shapeType].render(scenes[shapeType], camera);
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            // التكبير والتصغير
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const scale = e.deltaY > 0 ? 1.1 : 0.9;
+                camera.position.multiplyScalar(scale);
+                camera.lookAt(0, 0, 0);
+                renderers[shapeType].render(scenes[shapeType], camera);
+            });
+        }
+
+        // إنشاء المكعب
+        function createCube(side = 2) {
+            if (shapes.cube) {
+                scenes.cube.remove(shapes.cube);
+            }
+            
+            const group = new THREE.Group();
+            
+            const geometry = new THREE.BoxGeometry(side, side, side);
+            const material = new THREE.MeshLambertMaterial({ 
+                color: 0x667eea, 
+                transparent: true, 
+                opacity: 0.6,
+                wireframe: false
+            });
+            const cube = new THREE.Mesh(geometry, material);
+            
+            // إضافة الخطوط
+            const edges = new THREE.EdgesGeometry(geometry);
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0x2c3e50, linewidth: 3 });
+            const wireframe = new THREE.LineSegments(edges, lineMaterial);
+            cube.add(wireframe);
+            
+            group.add(cube);
+            
+            // إضافة خطوط الأبعاد
+            addCubeDimensions(group, side);
+            
+            shapes.cube = group;
+            scenes.cube.add(group);
+            
+            // تحديث التسميات
+            updateCubeLabels(side);
+            
+            renderers.cube.render(scenes.cube, cameras.cube);
+        }
+
+        // إضافة خطوط الأبعاد للمكعب
+        function addCubeDimensions(group, side) {
+            const offset = side / 2 + 0.5;
+            
+            // خط الطول (أحمر)
+            const lengthGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-side/2, -offset, side/2),
+                new THREE.Vector3(side/2, -offset, side/2)
+            ]);
+            const lengthLine = new THREE.Line(lengthGeometry, new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 4 }));
+            group.add(lengthLine);
+            
+            // خط العرض (أخضر)
+            const widthGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(offset, -offset, -side/2),
+                new THREE.Vector3(offset, -offset, side/2)
+            ]);
+            const widthLine = new THREE.Line(widthGeometry, new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 4 }));
+            group.add(widthLine);
+            
+            // خط الارتفاع (أزرق)
+            const heightGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(offset, -side/2, offset),
+                new THREE.Vector3(offset, side/2, offset)
+            ]);
+            const heightLine = new THREE.Line(heightGeometry, new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 4 }));
+            group.add(heightLine);
+            
+            // إضافة النصوص
+            addDimensionText(group, `${side.toFixed(1)}`, new THREE.Vector3(0, -offset-0.3, side/2+0.2), 0xff0000);
+            addDimensionText(group, `${side.toFixed(1)}`, new THREE.Vector3(offset+0.2, -offset-0.3, 0), 0x00ff00);
+            addDimensionText(group, `${side.toFixed(1)}`, new THREE.Vector3(offset+0.2, 0, offset+0.2), 0x0000ff);
+        }
+
+        // تحديث تسميات المكعب
+        function updateCubeLabels(side) {
+            const labelsContainer = document.getElementById('cube-labels');
+            labelsContainer.innerHTML = `
+                <div class="dimension-label" style="top: 10px; right: 10px;">الضلع: ${side.toFixed(1)}</div>
+                <div class="dimension-label" style="bottom: 10px; right: 10px;">مكعب</div>
+            `;
+        }
+
+        // إنشاء متوازي المستطيلات
+        function createBox(length = 3, width = 2, height = 1.5) {
+            if (shapes.box) {
+                scenes.box.remove(shapes.box);
+            }
+            
+            const group = new THREE.Group();
+            
+            const geometry = new THREE.BoxGeometry(length, height, width);
+            const material = new THREE.MeshLambertMaterial({ 
+                color: 0x28a745, 
+                transparent: true, 
+                opacity: 0.6 
+            });
+            const box = new THREE.Mesh(geometry, material);
+            
+            const edges = new THREE.EdgesGeometry(geometry);
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0x155724, linewidth: 3 });
+            const wireframe = new THREE.LineSegments(edges, lineMaterial);
+            box.add(wireframe);
+            
+            group.add(box);
+            
+            // إضافة خطوط الأبعاد
+            addBoxDimensions(group, length, width, height);
+            
+            shapes.box = group;
+            scenes.box.add(group);
+            
+            updateBoxLabels(length, width, height);
+            renderers.box.render(scenes.box, cameras.box);
+        }
+
+        // إضافة خطوط الأبعاد لمتوازي المستطيلات
+        function addBoxDimensions(group, length, width, height) {
+            const offsetX = length / 2 + 0.5;
+            const offsetY = height / 2 + 0.5;
+            const offsetZ = width / 2 + 0.5;
+            
+            // خط الطول (أحمر)
+            const lengthGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-length/2, -offsetY, width/2),
+                new THREE.Vector3(length/2, -offsetY, width/2)
+            ]);
+            const lengthLine = new THREE.Line(lengthGeometry, new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 5 }));
+            group.add(lengthLine);
+            
+            // خط العرض (أخضر)
+            const widthGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(offsetX, -offsetY, -width/2),
+                new THREE.Vector3(offsetX, -offsetY, width/2)
+            ]);
+            const widthLine = new THREE.Line(widthGeometry, new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 5 }));
+            group.add(widthLine);
+            
+            // خط الارتفاع (أزرق)
+            const heightGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(offsetX, -height/2, offsetZ),
+                new THREE.Vector3(offsetX, height/2, offsetZ)
+            ]);
+            const heightLine = new THREE.Line(heightGeometry, new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 5 }));
+            group.add(heightLine);
+            
+            // إضافة النصوص
+            addDimensionText(group, `الطول: ${length.toFixed(1)}`, new THREE.Vector3(0, -offsetY-0.3, width/2+0.3), 0xff0000);
+            addDimensionText(group, `العرض: ${width.toFixed(1)}`, new THREE.Vector3(offsetX+0.3, -offsetY-0.3, 0), 0x00ff00);
+            addDimensionText(group, `الارتفاع: ${height.toFixed(1)}`, new THREE.Vector3(offsetX+0.3, 0, offsetZ+0.3), 0x0000ff);
+        }
+
+        function updateBoxLabels(length, width, height) {
+            const labelsContainer = document.getElementById('box-labels');
+            labelsContainer.innerHTML = `
+                <div class="dimension-label" style="top: 10px; right: 10px; background: #dc3545;">الطول: ${length.toFixed(1)}</div>
+                <div class="dimension-label" style="top: 40px; right: 10px; background: #28a745;">العرض: ${width.toFixed(1)}</div>
+                <div class="dimension-label" style="top: 70px; right: 10px; background: #007bff;">الارتفاع: ${height.toFixed(1)}</div>
+            `;
+        }
+
+        // إنشاء الأسطوانة
+        function createCylinder(radius = 1.5, height = 3) {
+            if (shapes.cylinder) {
+                scenes.cylinder.remove(shapes.cylinder);
+            }
+            
+            const group = new THREE.Group();
+            
+            const geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
+            const material = new THREE.MeshLambertMaterial({ 
+                color: 0xffc107, 
+                transparent: true, 
+                opacity: 0.6 
+            });
+            const cylinder = new THREE.Mesh(geometry, material);
+            
+            const edges = new THREE.EdgesGeometry(geometry);
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0x856404, linewidth: 3 });
+            const wireframe = new THREE.LineSegments(edges, lineMaterial);
+            cylinder.add(wireframe);
+            
+            group.add(cylinder);
+            
+            // إضافة خطوط الأبعاد
+            addCylinderDimensions(group, radius, height);
+            
+            shapes.cylinder = group;
+            scenes.cylinder.add(group);
+            
+            updateCylinderLabels(radius, height);
+            renderers.cylinder.render(scenes.cylinder, cameras.cylinder);
+        }
+
+        // إضافة خطوط الأبعاد للأسطوانة
+        function addCylinderDimensions(group, radius, height) {
+            const offset = radius + 0.5;
+            
+            // خط نصف القطر (أحمر)
+            const radiusGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, height/2, 0),
+                new THREE.Vector3(radius, height/2, 0)
+            ]);
+            const radiusLine = new THREE.Line(radiusGeometry, new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 5 }));
+            group.add(radiusLine);
+            
+            // خط الارتفاع (أزرق)
+            const heightGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(offset, -height/2, 0),
+                new THREE.Vector3(offset, height/2, 0)
+            ]);
+            const heightLine = new THREE.Line(heightGeometry, new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 5 }));
+            group.add(heightLine);
+            
+            // محيط القاعدة (أخضر)
+            const circleGeometry = new THREE.RingGeometry(radius - 0.05, radius + 0.05, 32);
+            const circleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+            const circle = new THREE.Mesh(circleGeometry, circleMaterial);
+            circle.position.y = height/2 + 0.1;
+            circle.rotation.x = Math.PI / 2;
+            group.add(circle);
+            
+            // إضافة النصوص
+            addDimensionText(group, `نصف القطر: ${radius.toFixed(1)}`, new THREE.Vector3(radius/2, height/2 + 0.3, 0), 0xff0000);
+            addDimensionText(group, `الارتفاع: ${height.toFixed(1)}`, new THREE.Vector3(offset + 0.3, 0, 0), 0x0000ff);
+            addDimensionText(group, `المحيط: ${(2 * Math.PI * radius).toFixed(1)}`, new THREE.Vector3(0, height/2 + 0.5, 0), 0x00ff00);
+        }
+
+        function updateCylinderLabels(radius, height) {
+            const labelsContainer = document.getElementById('cylinder-labels');
+            labelsContainer.innerHTML = `
+                <div class="dimension-label" style="top: 10px; right: 10px; background: #dc3545;">نصف القطر: ${radius.toFixed(1)}</div>
+                <div class="dimension-label" style="top: 40px; right: 10px; background: #007bff;">الارتفاع: ${height.toFixed(1)}</div>
+                <div class="dimension-label" style="bottom: 10px; right: 10px; background: #28a745;">المحيط: ${(2 * Math.PI * radius).toFixed(1)}</div>
+            `;
+        }
+
+        // إنشاء المخروط
+        function createCone(radius = 1.5, height = 3) {
+            if (shapes.cone) {
+                scenes.cone.remove(shapes.cone);
+            }
+            
+            const group = new THREE.Group();
+            
+            const geometry = new THREE.ConeGeometry(radius, height, 32);
+            const material = new THREE.MeshLambertMaterial({ 
+                color: 0xe74c3c, 
+                transparent: true, 
+                opacity: 0.6 
+            });
+            const cone = new THREE.Mesh(geometry, material);
+            cone.position.y = height / 2;
+            
+            const edges = new THREE.EdgesGeometry(geometry);
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xa93226, linewidth: 3 });
+            const wireframe = new THREE.LineSegments(edges, lineMaterial);
+            cone.add(wireframe);
+            
+            group.add(cone);
+            
+            // إضافة خطوط الأبعاد
+            addConeDimensions(group, radius, height);
+            
+            shapes.cone = group;
+            scenes.cone.add(group);
+            
+            updateConeLabels(radius, height);
+            renderers.cone.render(scenes.cone, cameras.cone);
+        }
+
+        // إضافة خطوط الأبعاد للمخروط
+        function addConeDimensions(group, radius, height) {
+            const offset = radius + 0.5;
+            const slant = Math.sqrt(radius * radius + height * height);
+            
+            // خط نصف القطر (أحمر)
+            const radiusGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(radius, 0, 0)
+            ]);
+            const radiusLine = new THREE.Line(radiusGeometry, new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 5 }));
+            group.add(radiusLine);
+            
+            // خط الارتفاع (أزرق)
+            const heightGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(offset, 0, 0),
+                new THREE.Vector3(offset, height, 0)
+            ]);
+            const heightLine = new THREE.Line(heightGeometry, new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 5 }));
+            group.add(heightLine);
+            
+            // خط الراسم (أخضر)
+            const slantGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, height, 0),
+                new THREE.Vector3(radius, 0, 0)
+            ]);
+            const slantLine = new THREE.Line(slantGeometry, new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 5 }));
+            group.add(slantLine);
+            
+            // محيط القاعدة (أصفر)
+            const circleGeometry = new THREE.RingGeometry(radius - 0.05, radius + 0.05, 32);
+            const circleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide });
+            const circle = new THREE.Mesh(circleGeometry, circleMaterial);
+            circle.position.y = -0.1;
+            circle.rotation.x = Math.PI / 2;
+            group.add(circle);
+            
+            // إضافة النصوص
+            addDimensionText(group, `نصف القطر: ${radius.toFixed(1)}`, new THREE.Vector3(radius/2, -0.3, 0), 0xff0000);
+            addDimensionText(group, `الارتفاع: ${height.toFixed(1)}`, new THREE.Vector3(offset + 0.3, height/2, 0), 0x0000ff);
+            addDimensionText(group, `الراسم: ${slant.toFixed(1)}`, new THREE.Vector3(radius/2, height/2, 0), 0x00ff00);
+            addDimensionText(group, `المحيط: ${(2 * Math.PI * radius).toFixed(1)}`, new THREE.Vector3(0, -0.5, 0), 0xffff00);
+        }
+
+        // إضافة النص ثلاثي الأبعاد
+        function addDimensionText(group, text, position, color) {
+            // إنشاء عنصر HTML للنص
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 64;
+            
+            context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+            context.font = 'Bold 20px Arial';
+            context.textAlign = 'center';
+            context.fillText(text, 128, 40);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            
+            sprite.position.copy(position);
+            sprite.scale.set(1, 0.25, 1);
+            
+            group.add(sprite);
+        }
+
+        function updateConeLabels(radius, height) {
+            const slant = Math.sqrt(radius * radius + height * height);
+            const perimeter = 2 * Math.PI * radius;
+            const labelsContainer = document.getElementById('cone-labels');
+            labelsContainer.innerHTML = `
+                <div class="dimension-label" style="top: 10px; right: 10px; background: #dc3545;">نصف القطر: ${radius.toFixed(1)}</div>
+                <div class="dimension-label" style="top: 40px; right: 10px; background: #007bff;">الارتفاع: ${height.toFixed(1)}</div>
+                <div class="dimension-label" style="top: 70px; right: 10px; background: #28a745;">طول الراسم: ${slant.toFixed(1)}</div>
+                <div class="dimension-label" style="bottom: 10px; right: 10px; background: #ffc107;">المحيط: ${perimeter.toFixed(1)}</div>
+            `;
+        }
+
+        // وظائف التحديث المباشر
+        function updateCube() {
+            const side = parseFloat(document.getElementById('cube-side').value) || 2;
+            createCube(side);
+        }
+
+        function updateBox() {
+            const length = parseFloat(document.getElementById('box-length').value) || 3;
+            const width = parseFloat(document.getElementById('box-width').value) || 2;
+            const height = parseFloat(document.getElementById('box-height').value) || 1.5;
+            createBox(length, width, height);
+        }
+
+        function updateCylinder() {
+            const radius = parseFloat(document.getElementById('cylinder-radius').value) || 1.5;
+            const height = parseFloat(document.getElementById('cylinder-height').value) || 3;
+            createCylinder(radius, height);
+        }
+
+        function updateCone() {
+            const radius = parseFloat(document.getElementById('cone-radius').value) || 1.5;
+            const height = parseFloat(document.getElementById('cone-height').value) || 3;
+            createCone(radius, height);
+        }
+
+        // وظائف الحساب
+        function calculateCube() {
+            const side = parseFloat(document.getElementById('cube-side').value);
+            
+            if (isNaN(side) || side <= 0) {
+                alert('يرجى إدخال قيمة صحيحة لطول الضلع');
+                return;
+            }
+
+            const lateralArea = 4 * side * side;
+            const totalArea = 6 * side * side;
+            const volume = side * side * side;
+
+            document.getElementById('cube-lateral').textContent = lateralArea.toFixed(2) + ' وحدة²';
+            document.getElementById('cube-total').textContent = totalArea.toFixed(2) + ' وحدة²';
+            document.getElementById('cube-volume').textContent = volume.toFixed(2) + ' وحدة³';
+            document.getElementById('cube-results').style.display = 'block';
+        }
+
+        function calculateBox() {
+            const length = parseFloat(document.getElementById('box-length').value);
+            const width = parseFloat(document.getElementById('box-width').value);
+            const height = parseFloat(document.getElementById('box-height').value);
+            
+            if (isNaN(length) || isNaN(width) || isNaN(height) || length <= 0 || width <= 0 || height <= 0) {
+                alert('يرجى إدخال قيم صحيحة لجميع الأبعاد');
+                return;
+            }
+
+            const lateralArea = 2 * (length * height + width * height);
+            const totalArea = 2 * (length * width + length * height + width * height);
+            const volume = length * width * height;
+
+            document.getElementById('box-lateral').textContent = lateralArea.toFixed(2) + ' وحدة²';
+            document.getElementById('box-total').textContent = totalArea.toFixed(2) + ' وحدة²';
+            document.getElementById('box-volume').textContent = volume.toFixed(2) + ' وحدة³';
+            document.getElementById('box-results').style.display = 'block';
+        }
+
+        function calculateCylinder() {
+            const radius = parseFloat(document.getElementById('cylinder-radius').value);
+            const height = parseFloat(document.getElementById('cylinder-height').value);
+            
+            if (isNaN(radius) || isNaN(height) || radius <= 0 || height <= 0) {
+                alert('يرجى إدخال قيم صحيحة لنصف القطر والارتفاع');
+                return;
+            }
+
+            const lateralArea = 2 * Math.PI * radius * height;
+            const totalArea = 2 * Math.PI * radius * (radius + height);
+            const volume = Math.PI * radius * radius * height;
+            const perimeter = 2 * Math.PI * radius;
+
+            document.getElementById('cylinder-lateral').textContent = lateralArea.toFixed(2) + ' وحدة²';
+            document.getElementById('cylinder-total').textContent = totalArea.toFixed(2) + ' وحدة²';
+            document.getElementById('cylinder-volume').textContent = volume.toFixed(2) + ' وحدة³';
+            document.getElementById('cylinder-perimeter').textContent = perimeter.toFixed(2) + ' وحدة';
+            document.getElementById('cylinder-results').style.display = 'block';
+        }
+
+        function calculateCone() {
+            const radius = parseFloat(document.getElementById('cone-radius').value);
+            const height = parseFloat(document.getElementById('cone-height').value);
+            
+            if (isNaN(radius) || isNaN(height) || radius <= 0 || height <= 0) {
+                alert('يرجى إدخال قيم صحيحة لنصف القطر والارتفاع');
+                return;
+            }
+
+            const slantHeight = Math.sqrt(radius * radius + height * height);
+            const lateralArea = Math.PI * radius * slantHeight;
+            const totalArea = Math.PI * radius * (radius + slantHeight);
+            const volume = (1/3) * Math.PI * radius * radius * height;
+            const perimeter = 2 * Math.PI * radius;
+
+            document.getElementById('cone-lateral').textContent = lateralArea.toFixed(2) + ' وحدة²';
+            document.getElementById('cone-total').textContent = totalArea.toFixed(2) + ' وحدة²';
+            document.getElementById('cone-volume').textContent = volume.toFixed(2) + ' وحدة³';
+            document.getElementById('cone-slant').textContent = slantHeight.toFixed(2) + ' وحدة';
+            document.getElementById('cone-perimeter').textContent = perimeter.toFixed(2) + ' وحدة';
+            document.getElementById('cone-results').style.display = 'block';
+        }
+
+        // حلقة الرسم
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // تدوير الأشكال تلقائياً
+            if (shapes.cube) {
+                shapes.cube.rotation.x += 0.005;
+                shapes.cube.rotation.y += 0.005;
+                renderers.cube.render(scenes.cube, cameras.cube);
+            }
+            
+            if (shapes.box) {
+                shapes.box.rotation.x += 0.003;
+                shapes.box.rotation.y += 0.007;
+                renderers.box.render(scenes.box, cameras.box);
+            }
+            
+            if (shapes.cylinder) {
+                shapes.cylinder.rotation.x += 0.004;
+                shapes.cylinder.rotation.y += 0.006;
+                renderers.cylinder.render(scenes.cylinder, cameras.cylinder);
+            }
+            
+            if (shapes.cone) {
+                shapes.cone.rotation.x += 0.003;
+                shapes.cone.rotation.y += 0.008;
+                renderers.cone.render(scenes.cone, cameras.cone);
+            }
+        }
+
+        // التهيئة عند تحميل الصفحة
+        window.addEventListener('load', function() {
+            // إنشاء جميع المشاهد
+            initScene('cube-3d', 'cube');
+            initScene('box-3d', 'box');
+            initScene('cylinder-3d', 'cylinder');
+            initScene('cone-3d', 'cone');
+            
+            // إنشاء الأشكال الافتراضية
+            createCube(2);
+            createBox(3, 2, 1.5);
+            createCylinder(1.5, 3);
+            createCone(1.5, 3);
+            
+            // بدء حلقة الرسم
+            animate();
+        });
+
+        // التعامل مع تغيير حجم النافذة
+        window.addEventListener('resize', function() {
+            Object.keys(renderers).forEach(key => {
+                const container = renderers[key].domElement.parentElement;
+                const camera = cameras[key];
+                const renderer = renderers[key];
+                
+                camera.aspect = container.offsetWidth / container.offsetHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.offsetWidth, container.offsetHeight);
+            });
+        });
+
+        // إضافة مستمع الأحداث للضغط على Enter
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const activeElement = document.activeElement;
+                if (activeElement.id.includes('cube')) calculateCube();
+                else if (activeElement.id.includes('box')) calculateBox();
+                else if (activeElement.id.includes('cylinder')) calculateCylinder();
+                else if (activeElement.id.includes('cone')) calculateCone();
+            }
+        });
+    </script>
+</body>
+</html>
